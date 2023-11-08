@@ -16,4 +16,8 @@ def send_request(command, *args):
 # Example usage
 if __name__ == "__main__":
     send_request("BALANCE", "123")
+    send_request("WITHDRAW", "123", "100.0")
+    send_request("DEPOSIT", "123", "200.0")
+    send_request("TRANSFER", "123", "456", "50.0")
+    send_request("BALANCE", "123")
     send_request("BALANCE", "456")

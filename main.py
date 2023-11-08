@@ -1,4 +1,5 @@
 import socket
+import threading
 
 class BankServer:
     def __init__(self):
@@ -38,23 +39,12 @@ class BankServer:
                 return self.deposit(to_account, amount, client_clock)
         return False, self.logical_clock
 
-def main():
-    server = BankServer()
-    server.create_account(123, 1000.0, "John")
-    server.create_account(456, 500.0, "Alice")
-
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(("localhost", 12345))
-    server_socket.listen(5)
-
-    print("Bank server is running...")
-
-    while True:
-        client_socket, addr = server_socket.accept()
-        print(f"Accepted connection from {addr}")
+def handle_client(client_socket, server):
+    try:
+        client_socket.settimeout(60)  # Optional: Set a timeout for the client socket.
         request = client_socket.recv(1024).decode()
         client_clock, command, *args = request.split()
-        
+
         if command == "BALANCE":
             account_number = int(args[0])
             balance, server_clock = server.get_balance(account_number, int(client_clock))
@@ -83,7 +73,25 @@ def main():
             response = "Invalid command."
 
         client_socket.send(response.encode())
+    finally:
         client_socket.close()
+
+def main():
+    server = BankServer()
+    server.create_account(123, 1000.0, "John")
+    server.create_account(456, 500.0, "Alice")
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(("localhost", 12345))
+    server_socket.listen(5)
+
+    print("Bank server is running...")
+
+    while True:
+        client_socket, addr = server_socket.accept()
+        print(f"Accepted connection from {addr}")
+        client_thread = threading.Thread(target=handle_client, args=(client_socket, server))
+        client_thread.start()
 
 if __name__ == "__main__":
     main()
